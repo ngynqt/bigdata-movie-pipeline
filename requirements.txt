@@ -1,0 +1,7 @@
+pyspark==3.5.1
+delta-spark==3.1.0
+kafka-python==2.0.2
+Flask
+pandas
+psycopg2-binary
+SQLAlchemy

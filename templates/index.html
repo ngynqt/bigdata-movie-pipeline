@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieAI - Real-time Big Data Streaming</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <h1 class="logo">MOVIE<span>AI</span></h1>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">TV Shows</a></li>
+                <li><a href="#">Movies</a></li>
+                <li><a href="#">My List</a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <div class="user-login">
+                <span>User ID:</span>
+                <input type="number" id="currentUserId" placeholder="1-50" value="10" min="1" max="50">
+                <button id="loginBtn">Switch</button>
+            </div>
+            <img class="avatar" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png"
+                alt="Avatar">
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-content">
+            <h2 class="hero-title" id="heroTitle">Inception</h2>
+            <div class="hero-meta">
+                <span class="match">98% Match</span>
+                <span>2010</span>
+                <span class="age">13+</span>
+                <span>2h 28m</span>
+            </div>
+            <p class="hero-desc">A thief who steals corporate secrets through the use of dream-sharing technology is
+                given the inverse task of planting an idea into the mind of a C.E.O.</p>
+            <div class="hero-buttons">
+                <button class="btn btn-play"><i class="fas fa-play"></i> Play</button>
+                <button class="btn btn-more" onclick="openRatingModal(1, 'Inception')"><i class="fas fa-star"></i> Rate
+                    This Movie</button>
+            </div>
+        </div>
+        <div class="hero-fade"></div>
+    </div>
+
+    <main class="main-content">
+        <!-- Recommended Row -->
+        <div class="movie-row">
+            <h3 class="row-title">Recommended For You <span id="recStatus" class="status-text"></span></h3>
+            <div class="row-posters" id="recommendedRow">
+                <!-- Posters will be injected here -->
+            </div>
+        </div>
+
+        <!-- Trending Row -->
+        <div class="movie-row">
+            <h3 class="row-title">Trending Now</h3>
+            <div class="row-posters" id="trendingRow">
+                <!-- Posters injected via JS -->
+            </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="movie-row">
+            <h3 class="row-title">Action Thrillers</h3>
+            <div class="row-posters" id="actionRow">
+                <!-- Posters injected via JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Rating Modal -->
+    <div class="modal" id="ratingModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModal">&times;</span>
+            <h2 id="modalMovieTitle">Rate Movie</h2>
+            <p>Thank you!</p>
+            <div class="stars" id="starContainer">
+                <i class="fas fa-star" data-rating="5"></i>
+                <i class="fas fa-star" data-rating="4"></i>
+                <i class="fas fa-star" data-rating="3"></i>
+                <i class="fas fa-star" data-rating="2"></i>
+                <i class="fas fa-star" data-rating="1"></i>
+            </div>
+            <p class="status-msg" id="rateSubmitStatus"></p>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Mock Database of 30 movies with TMDB Posters
+        const movieDb = [
+            { id: 1, title: "Inception", img: "https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg" },
+            { id: 2, title: "Interstellar", img: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg" },
+            { id: 3, title: "The Dark Knight", img: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" },
+            { id: 4, title: "Avatar", img: "https://image.tmdb.org/t/p/w500/jRXYjXNq0Cs2TcJjLkki24MLp7u.jpg" },
+            { id: 5, title: "The Matrix", img: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg" },
+            { id: 6, title: "Avengers: Endgame", img: "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg" },
+            { id: 7, title: "Joker", img: "https://image.tmdb.org/t/p/w500/udDclJoHjfpt8MvCZTX5s1x5kF0.jpg" },
+            { id: 8, title: "Parasite", img: "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg" },
+            { id: 9, title: "Spider-Man", img: "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1ZrsNbjSGo3d6g.jpg" },
+            { id: 10, title: "Dune", img: "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg" },
+            { id: 11, title: "The Godfather", img: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg" },
+            { id: 12, title: "Pulp Fiction", img: "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPbOYKQruoY.jpg" },
+            { id: 13, title: "Fight Club", img: "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg" },
+            { id: 14, title: "Forrest Gump", img: "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg" },
+            { id: 15, title: "Gladiator", img: "https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg" },
+            { id: 16, title: "Titanic", img: "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg" },
+            { id: 17, title: "Star Wars", img: "https://image.tmdb.org/t/p/w500/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg" },
+            { id: 18, title: "Jurassic Park", img: "https://image.tmdb.org/t/p/w500/oU7Oq2kFAAlGqbU4VoAE36g4hoI.jpg" },
+            { id: 19, title: "The Lion King", img: "https://image.tmdb.org/t/p/w500/sKCr78AS8o5gWjmD6k5kZ4hI28n.jpg" },
+            { id: 20, title: "The Terminator", img: "https://image.tmdb.org/t/p/w500/hzsq5r1xS3Q4N5NIfYV0Iq5eRMB.jpg" },
+            { id: 21, title: "Alien", img: "https://image.tmdb.org/t/p/w500/vfrQk5IPloGg1v9Rzbh2Eg3VGyM.jpg" },
+            { id: 22, title: "Die Hard", img: "https://image.tmdb.org/t/p/w500/yFihWxQcmOca9HXiotHGOKH2h8u.jpg" },
+            { id: 23, title: "Rocky", img: "https://image.tmdb.org/t/p/w500/i5hmoRjHNWazo4ZXihncJ0Qo8iw.jpg" },
+            { id: 24, title: "Jaws", img: "https://image.tmdb.org/t/p/w500/s2xcqSFfT6F7ZXHxowjxfG0yisT.jpg" },
+            { id: 25, title: "E.T.", img: "https://image.tmdb.org/t/p/w500/tK1zyrqIG89A2k188gW1RzB6r5b.jpg" },
+            { id: 26, title: "Braveheart", img: "https://image.tmdb.org/t/p/w500/or1gBugZq9L65eA5x6I2qWvC7eO.jpg" },
+            { id: 27, title: "Goodfellas", img: "https://image.tmdb.org/t/p/w500/aKuFiU82s5ISJpGZp7YkIr3kCUd.jpg" },
+            { id: 28, title: "Se7en", img: "https://image.tmdb.org/t/p/w500/6yoghtyTpznpBik8o46R4LKn53K.jpg" },
+            { id: 29, title: "The Silence of the Lambs", img: "https://image.tmdb.org/t/p/w500/rplLJ2hPcOQmkFhTqUte0MkEaO2.jpg" },
+            { id: 30, title: "Schindler's List", img: "https://image.tmdb.org/t/p/w500/sF1U4EUQS8YHUYjNwlA8wI6s22L.jpg" }
+        ];
+
+        let selectedMovieId = null;
+
+        function renderRow(containerId, start, end) {
+            const container = document.getElementById(containerId);
+            let html = '';
+            for (let i = start; i <= end; i++) {
+                let m = movieDb[i - 1];
+                html += `
+                <div class="poster-card" onclick="openRatingModal(${m.id}, '${m.title.replace(/'/g, "\\'")}')">
+                    <img src="${m.img}" alt="${m.title}">
+                    <div class="poster-overlay">
+                        <p>${m.title}</p>
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        renderRow('trendingRow', 1, 10);
+        renderRow('actionRow', 11, 20);
+
+        async function fetchRecommendations() {
+            const userId = document.getElementById('currentUserId').value;
+            const recRow = document.getElementById('recommendedRow');
+            const statusText = document.getElementById('recStatus');
+
+            if (!userId) return;
+
+            recRow.innerHTML = '<div class="loading-shimmer">Processing AI Pipeline...</div>';
+
+            try {
+                const res = await fetch(`/api/recommendations/${userId}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    let html = '';
+                    data.data.forEach(item => {
+                        let m = movieDb[item.movie_id - 1] || { id: item.movie_id, title: "Unknown", img: "https://via.placeholder.com/500x750?text=No+Image" };
+                        let percentage = (item.rating / 5 * 100).toFixed(0);
+                        if (percentage > 100) percentage = 99; // Clip max
+
+                        html += `
+                        <div class="poster-card" onclick="openRatingModal(${m.id}, '${m.title.replace(/'/g, "\\'")}')">
+                            <img src="${m.img}" alt="${m.title}">
+                            <div class="poster-overlay">
+                                <span class="ai-badge">Match ${percentage}%</span>
+                                <p>${m.title}</p>
+                            </div>
+                        </div>`;
+                    });
+                    recRow.innerHTML = html;
+                    statusText.innerText = "";
+                } else {
+                    recRow.innerHTML = '';
+                    statusText.innerText = `(No history found. Try another user or wait for ML cycle)`;
+                }
+            } catch (err) {
+                recRow.innerHTML = '';
+            }
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', fetchRecommendations);
+
+        // Modal Logic
+        const modal = document.getElementById('ratingModal');
+        const closeModal = document.getElementById('closeModal');
+        const stars = document.querySelectorAll('#starContainer i');
+
+        function openRatingModal(movieId, title) {
+            selectedMovieId = movieId;
+            document.getElementById('modalMovieTitle').innerText = title;
+            document.getElementById('rateSubmitStatus').innerText = '';
+            stars.forEach(s => {
+                s.classList.remove('active');
+                s.style.color = '#555';
+            });
+            modal.style.display = 'flex';
+        }
+
+        closeModal.onclick = () => { modal.style.display = 'none'; }
+        window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; }
+
+        // Star click -> Send to Kafka
+        stars.forEach(star => {
+            star.addEventListener('click', async function () {
+                let rating = this.getAttribute('data-rating');
+
+                stars.forEach(s => {
+                    if (s.getAttribute('data-rating') <= rating) s.style.color = '#e50914';
+                    else s.style.color = '#555';
+                });
+
+                document.getElementById('rateSubmitStatus').innerText = "Streaming rating to Pipeline...";
+
+                const userId = document.getElementById('currentUserId').value || 10;
+
+                try {
+                    const res = await fetch('/api/rate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, movie_id: selectedMovieId, rating: rating })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        showToast(`Rated ${rating} stars. Event streamed to Kafka!`);
+                        setTimeout(() => { modal.style.display = 'none'; }, 1000);
+                    }
+                } catch (err) {
+                    document.getElementById('rateSubmitStatus').innerText = "Network Error!";
+                }
+            });
+        });
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => { t.classList.remove('show'); }, 3000);
+        }
+
+        // Initialize
+        fetchRecommendations();
+        setInterval(fetchRecommendations, 10000); // Polling every 10s for near real-time updates
+
+        // Navbar effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                nav.style.backgroundColor = 'var(--bg)';
+            } else {
+                nav.style.backgroundColor = 'transparent';
+            }
+        });
+    </script>
+</body>
+
+</html>
