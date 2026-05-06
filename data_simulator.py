@@ -28,7 +28,7 @@ def main():
             payload = {
                 "user_id": random.randint(1, 100),
                 "movie_id": random.randint(1, 30),
-                "rating": round(random.uniform(1, 5), 1),
+                "rating": random.randint(1, 5),
                 "timestamp": random.randint(one_year_ago, current_time)
             }
             producer.send("movie_ratings", payload)
