@@ -20,7 +20,7 @@ def main():
     print("[INFO] Starting data simulation stream...")
     while True:
         # Batch simulation: generate 50 records per iteration for higher throughput
-        for _ in range(50):
+        for _ in range(100):
             # Simulate historical data distribution over the past year (365 days)
             current_time = int(time.time())
             one_year_ago = current_time - (365 * 24 * 60 * 60)
